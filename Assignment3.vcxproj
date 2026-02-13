@@ -71,12 +71,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>.\srcs\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Bài tập lớn\Học kỳ 8\Assignment3\srcs\lib\Release;D:\Bài tập lớn\Học kỳ 8\Assignment3\srcs\lib\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)srcs\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)src\lib\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>.\srcs\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Bài tập lớn\Học kỳ 8\Assignment3\srcs\lib\Release;D:\Bài tập lớn\Học kỳ 8\Assignment3\srcs\lib\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)srcs\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)srcs\lib\Release;$(ProjectDir)srcs\lib\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -117,7 +117,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Bài tập lớn\Học kỳ 8\Assignment3\srcs\lib\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)srcs\lib\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>WinNTL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -134,7 +134,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Bài tập lớn\Học kỳ 8\Assignment3\srcs\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)srcs\lib\Release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>WinNTL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
