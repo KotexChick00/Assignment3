@@ -1,159 +1,216 @@
 #include "BigInt.h"
 
+// ============================================================
+//  GCD  –  Euclidean algorithm
+// ============================================================
 NTL::ZZ BigInt::GCD(NTL::ZZ a, NTL::ZZ b) {
-	if (a < 0) a = -a;
-	if (b < 0) b = -b;
+    if (a < 0) a = -a;
+    if (b < 0) b = -b;
 
-	NTL::ZZ remainder;
-
-	while (b != 0) {
-		remainder = a % b;
-		a = b;
-		b = remainder;
-	}
-
-	return a;
+    NTL::ZZ remainder;
+    while (b != 0) {
+        remainder = a % b;
+        a = b;
+        b = remainder;
+    }
+    return a;
 }
 
+// ============================================================
+//  Extended GCD  –  trả về gcd và hệ số Bézout x, y
+//  sao cho: a*x + b*y = gcd(a, b)
+// ============================================================
 NTL::ZZ BigInt::ExtendedGCD(NTL::ZZ a, NTL::ZZ b, NTL::ZZ& x, NTL::ZZ& y) {
-	if (a < 0) a = -a;
-	if (b < 0) b = -b;
-	NTL::ZZ x1(1), y1(0);
-	NTL::ZZ x2(0), y2(1);
-	NTL::ZZ q, r, temp;
-	while (b != 0) {
-		q = a / b;
-		r = a % b;
-		temp = x2;
-		x2 = x1 - q * x2;
-		x1 = temp;
-		temp = y2;
-		y2 = y1 - q * y2;
-		y1 = temp;
-		a = b;
-		b = r;
-	}
-	x = x1;
-	y = y1;
-	return a;
+    if (a < 0) a = -a;
+    if (b < 0) b = -b;
+
+    NTL::ZZ x1(1), y1(0);
+    NTL::ZZ x2(0), y2(1);
+    NTL::ZZ q, r, temp;
+
+    while (b != 0) {
+        q = a / b;
+        r = a % b;
+
+        temp = x2;
+        x2 = x1 - q * x2;
+        x1 = temp;
+
+        temp = y2;
+        y2 = y1 - q * y2;
+        y1 = temp;
+
+        a = b;
+        b = r;
+    }
+    x = x1;
+    y = y1;
+    return a;
 }
 
-NTL::ZZ BigInt::ModularInverse(NTL::ZZ a, NTL::ZZ m)
-{
-	NTL::ZZ x, y;
-	NTL::ZZ gcd = BigInt::ExtendedGCD(a, m, x, y);
-	if (gcd != 1) {
-		throw std::invalid_argument("Inverse doesn't exist");
-	}
-	return (x % m + m) % m;
+// ============================================================
+//  Modular Inverse  –  trả về a^(-1) mod m
+// ============================================================
+NTL::ZZ BigInt::ModularInverse(NTL::ZZ a, NTL::ZZ m) {
+    NTL::ZZ x, y;
+    NTL::ZZ gcd = BigInt::ExtendedGCD(a, m, x, y);
+    if (gcd != 1) {
+        throw std::invalid_argument("Modular inverse does not exist (gcd != 1)");
+    }
+    return (x % m + m) % m;
 }
 
-NTL::ZZ BigInt::PowerMod(NTL::ZZ base, NTL::ZZ exp, NTL::ZZ mod)
-{
-	NTL::ZZ result(1);
-	base = base % mod;
-	while (exp > 0) {
-		if (exp % 2 == 1) {
-			result = (result * base) % mod;
-		}
-		exp = exp >> 1; // equivalent to exp /= 2
-		base = (base * base) % mod;
-	}
-	return result;
+// ============================================================
+//  PowerMod  –  trả về base^exp mod mod  (square-and-multiply)
+// ============================================================
+NTL::ZZ BigInt::PowerMod(NTL::ZZ base, NTL::ZZ exp, NTL::ZZ mod) {
+    NTL::ZZ result(1);
+    base = base % mod;
+
+    while (exp > 0) {
+        if (exp % 2 == 1) {
+            result = (result * base) % mod;
+        }
+        exp = exp >> 1;
+        base = (base * base) % mod;
+    }
+    return result;
 }
 
+// ============================================================
+//  decompose  –  tách n-1 = 2^r * d  (d lẻ)
+// ============================================================
 void BigInt::decompose(NTL::ZZ n_minus_1, NTL::ZZ& d, long& r) {
-	d = n_minus_1;
-	r = 0;
-	while (NTL::IsOdd(d) == 0) {
-		d >>= 1;
-		r++;
-	}
+    d = n_minus_1;
+    r = 0;
+    while (NTL::IsOdd(d) == 0) {   // d chẵn
+        d >>= 1;
+        r++;
+    }
 }
 
-static const long small_primes[] = {
-	3,5,7,11,13,17,19,23,29,31,37,41,43,47,
-	53,59,61,67,71,73,79,83,89,97,
-	101,103,107,109,113,127,131,137,139,149,
-	// ... thêm nữa tùy muốn
+// ============================================================
+//  PassSmallPrimeTests  –  loại nhanh bằng các số nguyên tố nhỏ
+// ============================================================
+static const long SMALL_PRIMES[] = {
+    2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
+    31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+    73, 79, 83, 89, 97, 101, 103, 107, 109, 113,
+    127, 131, 137, 139, 149, 151, 157, 163, 167, 173,
+    179, 181, 191, 193, 197, 199, 211, 223, 227, 229
 };
 
-bool BigInt::PassSmallPrimeTests(NTL::ZZ n)
-{
-	for (long p : small_primes) {
-		if (NTL::rem(n, p) == 0) return false;
-	}
-	return true;
+bool BigInt::PassSmallPrimeTests(NTL::ZZ n) {
+    for (long p : SMALL_PRIMES) {
+        NTL::ZZ pz(p);
+        if (n == pz) return true;           // chính là số nguyên tố nhỏ này
+        if (NTL::rem(n, p) == 0) return false;
+    }
+    return true;
 }
 
-bool BigInt::MillerRabinTest(NTL::ZZ n, int k){
-	if (n <= 1) return false;
-	if (n <= 3) return true;
-	if (NTL::IsOdd(n) == 0) return false;
+// ============================================================
+//  MillerRabinTest  –  kiểm tra nguyên tố xác suất (k lần)
+// ============================================================
+bool BigInt::MillerRabinTest(NTL::ZZ n, int k) {
+    if (n <= 1)  return false;
+    if (n == 2 || n == 3) return true;
+    if (NTL::IsOdd(n) == 0) return false;
 
-	// --- Bước 1: Tách n-1 = 2^r * d ---
-	NTL::ZZ d;
-	long r;
-	decompose(n - 1, d, r);
+    // Bước 1: tách n-1 = 2^r * d
+    NTL::ZZ d;
+    long    r;
+    decompose(n - 1, d, r);
 
-	// --- Bước 2: Lặp k lần, mỗi lần chọn một nhân chứng a ---
-	for (int i = 0; i < k; i++) {
+    // Bước 2: lặp k lần
+    for (int i = 0; i < k; i++) {
 
-		// Chọn a ngẫu nhiên trong khoảng [2, n-2]
-		NTL::ZZ a;
-		// RandomBnd(n-3) cho ra số trong [0, n-4], cộng 2 → [2, n-2]
-		a = NTL::RandomBnd(n - 3) + 2;
+        // Chọn nhân chứng a ngẫu nhiên trong [2, n-2]
+        NTL::ZZ a = NTL::RandomBnd(n - 3) + 2;
 
-		// --- Bước 3: Tính x = a^d mod n ---
-		NTL::ZZ x = BigInt::PowerMod(a, d, n); // dùng hàm đã có!
+        // Bước 3: x = a^d mod n
+        NTL::ZZ x = BigInt::PowerMod(a, d, n);
 
-		// Nếu x == 1 hoặc x == n-1: nhân chứng này không bác bỏ được
-		// → sang nhân chứng tiếp theo
-		if (x == 1 || x == n - 1) continue;
+        if (x == 1 || x == n - 1) continue;   // nhân chứng không bác bỏ
 
-		// --- Bước 4: Bình phương tối đa r-1 lần ---
-		bool composite = true; // assume composite until proven otherwise
+        // Bước 4: bình phương tối đa r-1 lần
+        bool probably_prime = false;
+        for (long j = 0; j < r - 1; j++) {
+            x = (x * x) % n;           // FIX: dùng phép toán thông thường, KHÔNG dùng MulMod sai
 
-		for (long j = 0; j < r - 1; j++) {
-			// x = BigInt::PowerMod(x, NTL::ZZ(2), n); // x = x^2 mod n
+            if (x == n - 1) {
+                probably_prime = true;
+                break;
+            }
+        }
 
-			NTL::MulMod(x, x, NTL::ZZ(1), n); // x = x^2 mod n
+        if (!probably_prime) return false;     // nhân chứng a "tố cáo" n là hợp số
+    }
 
-			if (x == n - 1) {
-				composite = false; // nhân chứng này không bác bỏ được
-				break;
-			}
-		}
-
-		// Nếu qua r-1 lần bình phương mà vẫn không gặp n-1
-		// → n chắc chắn là hợp số (nhân chứng a đã "tố cáo" n)
-		if (composite) return false;
-	}
-
-	// Qua hết k vòng mà không bị bác bỏ → probably prime
-	return true;
-	
+    return true;   // probably prime
 }
 
-
+// ============================================================
+//  GenerateLargePrime  –  sinh số nguyên tố ngẫu nhiên 'bits' bit
+// ============================================================
 NTL::ZZ BigInt::GenerateLargePrime(int bits) {
-	NTL::ZZ candidate;
+    NTL::ZZ candidate;
 
-	while (true) {
-		// 1. Sinh số ngẫu nhiên có độ dài bit chính xác
-		candidate = NTL::RandomLen_ZZ(bits);
+    while (true) {
+        // 1. Sinh số ngẫu nhiên đúng độ dài bits
+        candidate = NTL::RandomLen_ZZ(bits);
 
-		// 2. Ép bit thấp nhất là 1 (số lẻ) và bit cao nhất là 1 (đúng độ dài bits)
-		NTL::SetBit(candidate, 0);
-		NTL::SetBit(candidate, bits - 1);
+        // 2. Ép bit 0 = 1 (số lẻ) và bit (bits-1) = 1 (đúng độ dài)
+        NTL::SetBit(candidate, 0);
+        NTL::SetBit(candidate, bits - 1);
 
-		// 3. Sàng sơ bộ với các số nguyên tố nhỏ (tối ưu hiệu suất)
-		// Loại bỏ nhanh các số chia hết cho 3, 5, 7, 11...
-		//if (NTL::GCD(candidate, NTL::ZZ(30030)) != 1) continue;
+        // 3. Sàng sơ bộ với các số nguyên tố nhỏ (loại ~80% ứng viên nhanh)
+        if (!PassSmallPrimeTests(candidate)) continue;
 
-		// 4. Kiểm tra Miller-Rabin với k = 40
-		if (MillerRabinTest(candidate, 40)) {
-			return candidate;
-		}
-	}
+        // 4. Miller-Rabin với k = 40 vòng lặp
+        if (MillerRabinTest(candidate, 40)) {
+            return candidate;
+        }
+    }
+}
+
+// ============================================================
+//  GenerateKeyPair  –  tạo bộ khóa RSA từ 2 số nguyên tố p, q
+// ============================================================
+BigInt::RSAKeyPair BigInt::GenerateKeyPair(NTL::ZZ p, NTL::ZZ q) {
+    RSAKeyPair kp;
+
+    // n = p * q
+    kp.n = p * q;
+
+    // phi(n) = (p-1)(q-1)
+    NTL::ZZ phi = (p - 1) * (q - 1);
+
+    // Chọn e = 65537 (chuẩn công nghiệp); nếu gcd(e, phi) != 1 thì báo lỗi
+    kp.e = NTL::ZZ(65537);
+    if (GCD(kp.e, phi) != 1) {
+        throw std::invalid_argument("e = 65537 is not coprime with phi(n). Choose different p, q.");
+    }
+
+    // d = e^(-1) mod phi
+    kp.d = ModularInverse(kp.e, phi);
+
+    return kp;
+}
+
+// ============================================================
+//  Encrypt  –  C = M^e mod n
+// ============================================================
+NTL::ZZ BigInt::Encrypt(NTL::ZZ message, NTL::ZZ e, NTL::ZZ n) {
+    if (message >= n) {
+        throw std::invalid_argument("Message must be less than n");
+    }
+    return PowerMod(message, e, n);
+}
+
+// ============================================================
+//  Decrypt  –  M = C^d mod n
+// ============================================================
+NTL::ZZ BigInt::Decrypt(NTL::ZZ ciphertext, NTL::ZZ d, NTL::ZZ n) {
+    return PowerMod(ciphertext, d, n);
 }
